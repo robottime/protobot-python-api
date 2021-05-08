@@ -25,7 +25,7 @@ class Battery():
         self._protocol.stop()
 
     def set_led(self, type, period, rgb):
-        self._protocol.set_led(type, period, rgb)
+        return self._protocol.set_led(type, period, rgb)
 
     def _status_cb(self, voltage, estop):
         self._voltage_mq.call(voltage)

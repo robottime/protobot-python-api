@@ -21,10 +21,10 @@ class Accessory():
         self._protocol.stop()
 
     def set_led(self, type, period, rgb):
-        self._protocol.set_led(type, period, rgb)
+        return self._protocol.set_led(type, period, rgb)
 
     def set_servo(self, pos):
-        self._protocol.set_servo_pos(pos)
+        return self._protocol.set_servo_pos(pos)
 
     def _gyro_cb(self, roll, pitch, yaw, temp):
         self._gyro_mq.call([roll/32768*pi, pitch/32768*pi, yaw/32768*pi])

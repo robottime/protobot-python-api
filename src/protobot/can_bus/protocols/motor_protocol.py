@@ -39,52 +39,52 @@ class MotorProtocol(CanProtocol):
         return struct.unpack('<BBBBBBBB', data)
 
     def request_api_version(self):
-        self.send_remote_frame(MotorProtocol.CMD_GET_API_VERSION)
+        return self.send_remote_frame(MotorProtocol.CMD_GET_API_VERSION)
 
     @CanProtocol.msg_handler(CMD_GET_API_VERSION)
     def handle_api_version(self, data):
         return struct.unpack('<HHI', data)
     
     def estop(self):
-        self.send_data(MotorProtocol.CMD_ODRIVE_ESTOP)
+        return self.send_data(MotorProtocol.CMD_ODRIVE_ESTOP)
     
     def reset(self):
-        self.send_data(MotorProtocol.CMD_RESET_ODRIVE)
+        return self.send_data(MotorProtocol.CMD_RESET_ODRIVE)
 
     def clear_errors(self):
-        self.send_data(MotorProtocol.CMD_CLEAR_ERRORS)
+        return self.send_data(MotorProtocol.CMD_CLEAR_ERRORS)
 
     def save_configuration(self):
-        self.send_data(MotorProtocol.CMD_SAVE_CONFIGURATION)
+        return self.send_data(MotorProtocol.CMD_SAVE_CONFIGURATION)
     
     def set_axis_node_id(self, id, rate):
-        self.send_data(
+        return self.send_data(
             MotorProtocol.CMD_SET_AXIS_NODE_ID,
             data = struct.pack('<II', id, rate)
         )
     
     def set_axis_request_state(self, state):
-        self.send_data(
+        return self.send_data(
             MotorProtocol.CMD_SET_AXIS_REQUESTED_STATE,
             data = struct.pack('<I', state)
         )
     
     def request_hardware_status(self):
-        self.send_remote_frame(MotorProtocol.CMD_GET_HARDWARE_STATUS)
+        return self.send_remote_frame(MotorProtocol.CMD_GET_HARDWARE_STATUS)
     
     @CanProtocol.msg_handler(CMD_GET_HARDWARE_STATUS)
     def handle_hardware_status(self, data):
         return struct.unpack('<ff', data)
     
     def request_motor_status(self):
-        self.send_remote_frame(MotorProtocol.CMD_GET_MOTOR_STATUS)
+        return self.send_remote_frame(MotorProtocol.CMD_GET_MOTOR_STATUS)
     
     @CanProtocol.msg_handler(CMD_GET_MOTOR_STATUS)
     def handle_motor_status(self, data):
         return struct.unpack('<fee', data)
 
     def request_controller_modes(self):
-        self.send_remote_frame(MotorProtocol.CMD_GET_CONTROLLER_MODES)
+        return self.send_remote_frame(MotorProtocol.CMD_GET_CONTROLLER_MODES)
     
     @CanProtocol.msg_handler(CMD_GET_CONTROLLER_MODES)
     def handle_controller_modes(self, data):
@@ -98,61 +98,61 @@ class MotorProtocol(CanProtocol):
     
     def set_controller_modes(self, control_mode, input_mode, *args):
         if input_mode == 5 and len(args) == 3:
-            self.send_data(
+            return self.send_data(
                 MotorProtocol.CMD_SET_CONTROLLER_MODES,
                 data = struct.pack('<BBeee', control_mode, input_mode, *args)
             )
         elif input_mode in [2,3,6,7] and len(args) == 1:
-            self.send_data(
+            return self.send_data(
                 MotorProtocol.CMD_SET_CONTROLLER_MODES,
                 data = struct.pack('<BBf', control_mode, input_mode, *args)
             )
         else:
-            self.send_data(
+            return self.send_data(
                 MotorProtocol.CMD_SET_CONTROLLER_MODES,
                 data = struct.pack('<BB', control_mode, input_mode)
             )
     
     def request_controller_pid(self):
-        self.send_remote_frame(MotorProtocol.CMD_GET_CONTROLLER_PID)
+        return self.send_remote_frame(MotorProtocol.CMD_GET_CONTROLLER_PID)
     
     @CanProtocol.msg_handler(CMD_GET_CONTROLLER_PID)
     def handle_controller_pid(self, data):
         return struct.unpack('<fee', data)
     
     def set_controller_pid(self, pos_p, vel_p, vel_i):
-        self.send_data(
+        return self.send_data(
             MotorProtocol.CMD_SET_CONTROLLER_PID,
             data = struct.pack('<fee', pos_p, vel_p, vel_i)
         )
     
     def request_limits(self):
-        self.send_remote_frame(MotorProtocol.CMD_GET_LIMITS)
+        return self.send_remote_frame(MotorProtocol.CMD_GET_LIMITS)
     
     @CanProtocol.msg_handler(CMD_GET_LIMITS)
     def handle_limits(self, data):
         return struct.unpack('ff', data)
 
     def set_limits(self, vel_limit, torque_limit):
-        self.send_data(
+        return self.send_data(
             MotorProtocol.CMD_SET_LIMITS,
             data = struct.pack('<ff', vel_limit, torque_limit)
         )
     
     def set_input_pos(self, pos, vel_ff, torque_ff):
-        self.send_data(
+        return self.send_data(
             MotorProtocol.CMD_SET_INPUT_POS,
             data = struct.pack('<fee', pos, vel_ff, torque_ff)
         )
     
     def set_input_vel(self, vel, torque_ff):
-        self.send_data(
+        return self.send_data(
             MotorProtocol.CMD_SET_INPUT_VEL,
             data = struct.pack('<ff', vel, torque_ff)
         )
     
     def set_input_torque(self, torque):
-        self.send_data(
+        return self.send_data(
             MotorProtocol.CMD_SET_INPUT_TORQUE,
             data = struct.pack('f', torque)
         )

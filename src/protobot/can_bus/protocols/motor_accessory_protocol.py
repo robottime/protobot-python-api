@@ -18,13 +18,13 @@ class MotorAccessoryProtocol(CanProtocol):
         return struct.unpack('<hhhh', data)
 
     def set_servo_pos(self, servo_pos):
-        self.send_data(
+        return self.send_data(
             MotorAccessoryProtocol.SERVO_SET_CMD_ID,
             data=struct.pack('B', int(servo_pos * 0xff))
         )
 
     def set_led(self, type, period, color):
-        self.send_data(
+        return self.send_data(
             MotorAccessoryProtocol.LED_SET_CMD_ID,
             data=struct.pack('BBBBB', type, period*10,
                              color[0], color[1], color[2])

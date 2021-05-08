@@ -65,11 +65,12 @@ class Motor():
             'controller_err': cerr,
             'control_mode': cmode,
             'input_mode': imode,
-            'update_rate': time() - self._recent_heartbeat # ERROR WHEN LOSE CONNECTION
+            'update_rate': time() - self._recent_heartbeat
         })
         self._recent_heartbeat = time()
 
     def status(self, timeout=3):
+        self._status.update({'update_rate': time() - self._recent_heartbeat})
         if self._status['update_rate'] > timeout:
             print('Disconnected')
         elif self._status['error']:
@@ -90,28 +91,28 @@ class Motor():
         return self._api_ver_mq.get_data(timeout)
 
     def estop(self):
-        self._protocol.estop()
+        return self._protocol.estop()
 
     def reboot(self):
-        self._protocol.reset()
+        return self._protocol.reset()
 
     def clear_errors(self):
-        self._protocol.clear_errors()
+        return self._protocol.clear_errors()
 
     def save_configuration(self):
-        self._protocol.save_configuration()
+        return self._protocol.save_configuration()
 
     def set_can_id(self, id=0x10, rate=1000):
-        self._protocol.set_axis_node_id(id, rate)
+        return self._protocol.set_axis_node_id(id, rate)
 
     def enable(self):
-        self._protocol.set_axis_request_state(8)
+        return self._protocol.set_axis_request_state(8)
 
     def disable(self):
-        self._protocol.set_axis_request_state(1)
+        return self._protocol.set_axis_request_state(1)
 
     def calibrate(self):
-        self._protocol.set_axis_request_state(3)
+        return self._protocol.set_axis_request_state(3)
 
     def _hardware_status_cb(self, voltage, temperature):
         self._hardware_status_mq.call((voltage, temperature))
@@ -129,20 +130,28 @@ class Motor():
     def _motor_status_cb(self, pos, vel, torque):
         self._motor_status_mq.call((pos, vel, torque))
 
+    def get_status(self, timeout=0.1):
+        self._protocol.request_motor_status()
+        data = self._motor_status_mq.get_data(timeout)
+        try:
+            return (data[0]/self._factor, data[1]/self._factor, data[2]*self._factor)
+        except:
+            return None
+
     def get_pos(self, timeout=0.1):
         self._protocol.request_motor_status()
         data = self._motor_status_mq.get_data(timeout)
-        return data[0] / self._factor
+        return data[0] / self._factor if data else None
 
     def get_vel(self, timeout=0.1):
         self._protocol.request_motor_status()
         data = self._motor_status_mq.get_data(timeout)
-        return data[1] / self._factor
+        return data[1] / self._factor if data else None
 
     def get_torque(self, timeout=0.1):
         self._protocol.request_motor_status()
         data = self._motor_status_mq.get_data(timeout)
-        return data[2] * self._factor
+        return data[2] * self._factor if data else None
 
     def _controller_modes_cb(self, control_mode, input_mode, *args):
         self._controller_modes_mq.call([control_mode, input_mode]+list(args))
@@ -159,7 +168,7 @@ class Motor():
         return self._controller_pid_mq.get_data(timeout)
 
     def set_controller_pid(self, pos_p=10, vel_p=0.03, vel_i=0.005):
-        self._protocol.set_controller_pid(pos_p, vel_p, vel_i)
+        return self._protocol.set_controller_pid(pos_p, vel_p, vel_i)
 
     def _limits_cb(self, vel_limit, torque_limit):
         self._limits_mq.call((vel_limit, torque_limit))
@@ -168,38 +177,37 @@ class Motor():
         self._protocol.request_limits()
         return self._limits_mq.get_data(timeout)
 
-    def set_limits(self, vel_limit = 0, torque_limit = 0):
-        self._protocol.set_limits(vel_limit, torque_limit)
+    def set_limits(self, vel_limit=0, torque_limit=0):
+        return self._protocol.set_limits(vel_limit, torque_limit)
 
-    def set_pos(self, pos, vel_ff = 0, torque_ff = 0):
-        self._protocol.set_input_pos(
+    def set_pos(self, pos, vel_ff=0, torque_ff=0):
+        return self._protocol.set_input_pos(
             pos * self._factor, vel_ff * self._factor, torque_ff / self._factor)
 
-    def set_vel(self, vel, torque_ff = 0):
-        self._protocol.set_input_vel(
+    def set_vel(self, vel, torque_ff=0):
+        return self._protocol.set_input_vel(
             vel * self._factor, torque_ff / self._factor)
 
     def set_torque(self, torque):
-        self._protocol.set_input_torque(torque / self._factor)
+        return self._protocol.set_input_torque(torque / self._factor)
 
     def position_mode(self):
-        self._protocol.set_controller_modes(3, 1)
+        return self._protocol.set_controller_modes(3, 1)
 
     def velocity_mode(self):
-        self._protocol.set_controller_modes(2, 1)
+        return self._protocol.set_controller_modes(2, 1)
 
     def torque_mode(self):
-        self._protocol.set_controller_modes(1, 1)
+        return self._protocol.set_controller_modes(1, 1)
 
-    def position_filter_mode(self, bandwidth = 20.0): # bandwidth in Hz
-        self._protocol.set_controller_modes(3, 3, bandwidth)
+    def position_filter_mode(self, bandwidth=20.0):  # bandwidth in Hz
+        return self._protocol.set_controller_modes(3, 3, bandwidth)
 
     def position_traj_mode(self, vel, accel, decel):
-        self._protocol.set_controller_modes(3, 5, vel, accel, decel)
+        return self._protocol.set_controller_modes(3, 5, vel, accel, decel)
 
     def velocity_ramp_mode(self, ramp):
-        self._protocol.set_controller_modes(2, 2, ramp)
-        pass
+        return self._protocol.set_controller_modes(2, 2, ramp)
 
     # def request_pos(self, callback):
     #     self._protocol.get_encoder_estimate()
@@ -208,4 +216,3 @@ class Motor():
     # def request_vel(self, callback):
     #     self._protocol.get_encoder_estimate()
     #     self._vel_mq.append_cb(callback)
-

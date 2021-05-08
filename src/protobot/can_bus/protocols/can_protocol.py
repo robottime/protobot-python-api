@@ -34,7 +34,7 @@ class CanProtocol():
             handler(data)
 
     def send_data(self, command_id, data = None):
-        self._manager.send_can_msg(
+        return self._manager.send_can_msg(
             node_id = self._node_id,
             command_id = command_id,
             data = data,
@@ -42,7 +42,7 @@ class CanProtocol():
         )
     
     def send_remote_frame(self, command_id):
-        self._manager.send_can_msg(
+        return self._manager.send_can_msg(
             node_id = self._node_id,
             command_id = command_id,
             is_remote_frame = True

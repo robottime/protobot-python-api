@@ -57,12 +57,17 @@ class CanManager():
 
     def send_can_msg(self, node_id, command_id, data = None, is_remote_frame = False):
         arbitration_id = node_id << 5 | command_id
-        self._bus.send(can.Message(
-            arbitration_id=arbitration_id,
-            data = data,
-            is_remote_frame=is_remote_frame,
-            is_extended_id=False
-        ))
+        try:
+            self._bus.send(can.Message(
+                arbitration_id=arbitration_id,
+                data = data,
+                is_remote_frame=is_remote_frame,
+                is_extended_id=False
+            ))
+        except:
+            return False
+        else:
+            return True
 
     def __del__(self):
         if self._bus:
