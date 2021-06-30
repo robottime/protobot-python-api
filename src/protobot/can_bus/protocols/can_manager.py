@@ -7,29 +7,18 @@ def filter_from_node_id(node_id):
         'extended': False
     }
 
-class Singleton(type):
-    _instances = {}
-    def __call__(cls, *args, **kwargs):
-        if cls not in cls._instances:
-            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
-        return cls._instances[cls]
-
-def test_listener(msg):
-    print(msg)
-
 class CanManager():
-    __metaclass__ = Singleton
 
     def __init__(self, channel = 'can0', bitrate = 250000):
-        self._filters = [
-            #{'can_id': 0x00, 'can_mask': 0x7E0, 'extended': False}
-        ]
+        self._filters = []
         self._listeners = {}
+        self._channel=channel
+        self._bitrate = bitrate
         self._bus = can.ThreadSafeBus(
             bustype='socketcan',
-            channel=channel,
-            bitrate=bitrate,
-            #can_filters = self._filters
+            channel=self._channel,
+            bitrate=self._bitrate,
+            can_filters = self._filters
         )
         self._notifier = can.Notifier(self._bus, [self._message_listener])
 
@@ -65,6 +54,13 @@ class CanManager():
                 is_extended_id=False
             ))
         except:
+            # self._bus.shutdown()
+            # self._bus = can.ThreadSafeBus(
+            #     bustype='socketcan',
+            #     channel=self._channel,
+            #     bitrate=self._bitrate,
+            #     can_filters = self._filters
+            # )
             return False
         else:
             return True
@@ -73,4 +69,3 @@ class CanManager():
         if self._bus:
             self._bus.shutdown()
 
-#can_manager = CanManager(channel='can0', bitrate=250000)

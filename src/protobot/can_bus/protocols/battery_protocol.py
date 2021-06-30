@@ -25,5 +25,5 @@ class BatteryProtocol(CanProtocol):
     def set_led(self, type, period, color):
         return self.send_data(
             BatteryProtocol.LED_SET_CMD_ID,
-            data = struct.pack('BBBBB', type, period*10, color[0], color[1], color[2])
+            data = struct.pack('BBBBB', type, int(period*10), color[0], color[1], color[2])
         )
