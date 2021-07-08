@@ -23,15 +23,21 @@ class Network(MutableMapping):
         self.scanner = NodeScanner(self)
         self.listeners = [MessageListener(self)]
         self.notifier = None
+        self.nodes = {}
         self.subscribers = {}
         self.send_lock = threading.Lock()
     
     def subscribe(self, can_id, callback):
-        self.subscribers[can_id].append(callback)
+        self.subscribers.setdefault(can_id, list())
+        if callback not in self.subscribers[can_id]:
+            self.subscribers[can_id].append(callback)
     
     def unsubscribe(self, can_id, callback=None):
         if callback is None:
-            del self.subscribers[can_id]
+            try:
+                del self.subscribers[can_id]
+            except:
+                pass
         else:
             self.subscribers[can_id].remove(callback)
     
@@ -129,7 +135,7 @@ class NodeScanner(object):
     def on_message_received(self, can_id, data):
         node_id = can_id & 0x7E0
         command = can_id & 0x1F
-        if node_id not in self.nodes and node_id != 0 and service == 0x01:
+        if node_id not in self.nodes and node_id != 0 and command == 0x01:
             mver, sver, dID = struct.unpack('<HHI', data)
             self.nodes[node_id] = dID
     

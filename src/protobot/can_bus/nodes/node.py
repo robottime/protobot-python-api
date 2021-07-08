@@ -1,13 +1,14 @@
 from abc import ABCMeta, abstractmethod
-from six import add_metaclass
-from functools import wraps
+from typing import Iterable
+from six import add_metaclass, wraps
 from time import time
-import struct
+import numpy as np
+
 
 @add_metaclass(ABCMeta)
 class NodeFactory(object):
     @abstractmethod
-    def get_node(self, *args, **kwargs):
+    def get_node(self, network, node_id, *args, **kwargs):
         return None
 
 class Node(object):
@@ -50,11 +51,15 @@ class Node(object):
                     if on_get_data.updated:
                         node.network.unsubscribe(node.can_id(command), on_get_data)
                         try:
-                            data_tuple = struct.unpack(format, on_get_data.data)
-                        except struct.error as e:
+                            data_tuple = np.frombuffer(on_get_data.data, dtype=format)[0]
+                        except Exception as e:
                             raise RuntimeError('Getting data with unknown format.', e)
+                        if isinstance(data_tuple, np.void):
+                            data_tuple = tuple(data_tuple)
+                        else:
+                            data_tuple = (data_tuple, )
                         if stamped:
-                            return func(node, *data_tuple, on_get_data.timestamp)
+                            return func(node, on_get_data.timestamp, *data_tuple)
                         else:
                             return func(node, *data_tuple)
                 node.network.unsubscribe(node.can_id(command), on_get_data)
@@ -72,11 +77,15 @@ class Node(object):
 
                 def on_sync_data(can_id, data, timestamp):
                     try:
-                        data_tuple = struct.unpack(format, data)
-                    except struct.error as e:
+                        data_tuple = np.frombuffer(data, dtype=format)[0]
+                    except Exception as e:
                         raise RuntimeError('Getting data with unknown format.', e)
+                    if isinstance(data_tuple, Iterable):
+                        data_tuple = tuple(data_tuple)
+                    else:
+                        data_tuple = (data_tuple, )
                     if stamped:
-                        callback(*data_tuple, timestamp)
+                        callback(timestamp, *data_tuple)
                     else:
                         callback(*data_tuple)
                     node.network.unsubscribe(node.can_id(command), on_sync_data)
@@ -99,8 +108,15 @@ class Node(object):
                     node.network.send_message(node.can_id(command), None, remote)
                 else:
                     try:
-                        data = struct.pack(format, *func(node, *args, **kwargs))
-                    except struct.error as e:
+                        data = func(node, *args, **kwargs)
+                        if isinstance(data, Iterable):
+                            data = tuple(data)
+                        else:
+                            data = (data, )
+                        data_bytes = np.array([data], dtype=format).tobytes()
+                    except Exception as e:
                         raise RuntimeError('Sending data with unknown format.', e)
-                    node.network.send_message(node.can_id(command), data, remote)
+                    node.network.send_message(node.can_id(command), data_bytes, remote)
+            return inner_wrapper
+        return wrapper
     

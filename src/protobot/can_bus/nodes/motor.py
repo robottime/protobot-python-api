@@ -1,11 +1,12 @@
 from .node import Node, NodeFactory
 from math import pi, fabs
-import struct
+import numpy as np
+from time import time
 
 class MotorFactory(NodeFactory):
-    def get_node(self, network, can_id = 0x10, reduction = 12.45):
-        motor = Motor(can_id, reduction)
-        network[can_id] = motor
+    def get_node(self, network, node_id = 0x10, reduction = 12.45):
+        motor = Motor(node_id, reduction)
+        network[node_id] = motor
         return motor
 
 class Motor(Node):
@@ -46,10 +47,10 @@ class Motor(Node):
 
     def associate_network(self, network):
         super(Motor, self).associate_network(network)
-        self
+        self.network.subscribe(self.can_id(self.CMD_ODRIVE_HEARTBEAT), self.heartbeat_callback)
     
     def heartbeat_callback(self, can_id, data, timestamp):
-        state,err,merr,eerr,cerr,cmode,imode,mtype = struct.unpack('<BBBBBBBB', data)
+        state,err,merr,eerr,cerr,cmode,imode,mtype = list(np.frombuffer(data, dtype='<B'))
         self._status.update({
             'state': state,
             'error': err,
@@ -62,10 +63,11 @@ class Motor(Node):
         })
 
     def status(self):
+        print(time())
         return self._status
 
-    @Node.get_func_decorator(CMD_GET_API_VERSION, '<HHI')
-    def get_api_version(self, main_ver, sub_ver, uuid):
+    @Node.get_func_decorator(CMD_GET_API_VERSION, '<u2,<u2,<u4')
+    def get_api_ver(self, main_ver, sub_ver, uuid):
         return {
             'device_uuid': uuid,
             'main_version': main_ver,
@@ -77,7 +79,7 @@ class Motor(Node):
         pass
 
     @Node.send_func_decorator(CMD_RESET_ODRIVE)
-    def reset(self):
+    def reboot(self):
         pass
 
     @Node.send_func_decorator(CMD_CLEAR_ERRORS)
@@ -88,121 +90,125 @@ class Motor(Node):
     def save_configuration(self):
         pass
 
-    @Node.send_func_decorator(CMD_SET_AXIS_NODE_ID, '<II')
+    @Node.send_func_decorator(CMD_SET_AXIS_NODE_ID, '<u4,<u4')
     def set_can_id(self, id = 0x10, rate = 1000):
         return (id, rate)
 
-    @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<I')
+    @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<u4')
     def enable(self):
-        return (8)
+        return (8, )
     
-    @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<I')
+    @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<u4')
     def disable(self):
-        return (1)
+        return (1, )
 
-    @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<I')
+    @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<u4')
     def calibrate(self):
-        return (3)
+        return (3, )
     
-    @Node.get_func_decorator(CMD_GET_HARDWARE_STATUS, '<ff')
+    @Node.get_func_decorator(CMD_GET_HARDWARE_STATUS, '<f4,<f4')
     def get_vbus(self, vbus, temperature):
         return vbus
 
-    @Node.get_func_decorator(CMD_GET_HARDWARE_STATUS, '<ff')
+    @Node.get_func_decorator(CMD_GET_HARDWARE_STATUS, '<f4,<f4')
     def get_temperature(self, vbus, temperature):
         return temperature
 
-    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<fee')
+    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
     def get_status(self, pos, vel, torque):
-        return (pos / self._factor, vel / self._factor, torque / self._factor)
+        return (pos / self._factor, vel / self._factor, torque * self._factor)
     
-    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<fee')
+    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
     def get_pos(self, pos, vel, torque):
         return pos / self._factor
     
-    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<fee')
+    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
     def get_vel(self, pos, vel, torque):
         return vel / self._factor
     
-    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<fee')
+    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
     def get_torque(self, pos, vel, torque):
-        return torque / self._factor
+        return torque * self._factor
 
-    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<BB')
+    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B')
     def get_controller_modes(self, control_mode, input_mode):
         return (control_mode, input_mode)
     
-    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<BBf')
-    def get_ramp_mode_ramp(self, control_mode, input_mode, ramp):
+    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B,<f4,<f2')
+    def get_ramp_mode_ramp(self, control_mode, input_mode, ramp,_):
         assert input_mode == 2
-        return ramp
+        return ramp / self._factor
     
-    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<BBf')
-    def get_filter_mode_bandwidth(self, control_mode, input_mode, bandwidth):
+    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B,<f4,<f2')
+    def get_filter_mode_bandwidth(self, control_mode, input_mode, bandwidth,_):
         assert input_mode == 3
         return bandwidth
     
-    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<BBeee')
+    @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B,<f2,<f2,<f2')
     def get_traj_mode_params(self, control_mode, input_mode, max_vel, max_acc, max_dec):
         assert input_mode == 5
-        return (max_vel, max_acc, max_dec)
+        return (max_vel / self._factor, max_acc / self._factor, max_dec / self._factor)
     
-    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<BB')
+    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B')
     def position_mode(self):
         return (3, 1)
     
-    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<BB')
+    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B')
     def velocity_mode(self):
         return (2, 1)
 
-    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<BB')
+    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B')
     def torque_mode(self):
         return (1, 1)
     
-    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<BBf')
+    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B,<f4')
     def position_filter_mode(self, bandwidth = 20):
         return (3, 3, bandwidth)
     
-    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<BBeee')
+    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B,<f2,<f2,<f2')
     def position_traj_mode(self, max_vel, max_acc, max_dec):
         return (3, 5, max_vel * self._factor, max_acc * self._factor, max_dec * self._factor)
     
-    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<BBf')
+    @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B,<f4')
     def velocity_ramp_mode(self, ramp):
         return (2, 2, ramp * self._factor)
     
-    @Node.get_func_decorator(CMD_GET_CONTROLLER_PID, '<fee')
+    @Node.get_func_decorator(CMD_GET_CONTROLLER_PID, '<f4,<f2,<f2')
     def get_controller_pid(self, pp, vp, vi):
         return (pp, vp, vi)
     
-    @Node.send_func_decorator(CMD_SET_CONTROLLER_PID, '<fee')
+    @Node.send_func_decorator(CMD_SET_CONTROLLER_PID, '<f4,<f2,<f2')
     def set_controller_pid(self, pos_p, vel_p, vel_i):
         return (pos_p, vel_p, vel_i)
 
-    @Node.get_func_decorator(CMD_GET_LIMITS, 'ff')
+    @Node.get_func_decorator(CMD_GET_LIMITS, '<f4,<f4')
     def get_limits(self, vel_limit, current_limit):
         return (vel_limit, current_limit)
     
-    @Node.get_func_decorator(CMD_GET_LIMITS, 'ff')
+    @Node.get_func_decorator(CMD_GET_LIMITS, '<f4,<f4')
     def get_vel_limit(self, vel_limit, current_limit):
-        return vel_limit
+        return vel_limit / self._factor
     
-    @Node.get_func_decorator(CMD_GET_LIMITS, 'ff')
+    @Node.get_func_decorator(CMD_GET_LIMITS, '<f4,<f4')
     def get_current_limit(self, vel_limit, current_limit):
         return current_limit
 
-    @Node.send_func_decorator(CMD_SET_LIMITS, '<ff')
+    @Node.send_func_decorator(CMD_SET_LIMITS, '<f4,<f4')
     def set_limits(self, vel_limit = 0, current_limit = 0):
         return (vel_limit, current_limit)
 
-    @Node.send_func_decorator(CMD_SET_INPUT_POS, '<fee')
-    def set_pos(self, pos, vel_ff = 0, torque_ff = 0):
-        return (pos * self._factor, vel_ff * self._factor, torque_ff * self._factor)
-    
-    @Node.send_func_decorator(CMD_SET_INPUT_VEL, '<ff')
-    def set_vel(self, vel, torque_ff):
-        return (vel * self._factor, torque_ff * self._factor)
+    @Node.send_func_decorator(CMD_SET_LIMITS, '<f4,<f4')
+    def set_vel_limit(self, vel_limit):
+        return (vel_limit * self._factor, 0)
 
-    @Node.send_func_decorator(CMD_SET_INPUT_TORQUE, '<f')
+    @Node.send_func_decorator(CMD_SET_INPUT_POS, '<f4,<f2,<f2')
+    def set_pos(self, pos, vel_ff = 0, torque_ff = 0):
+        return (pos * self._factor, vel_ff * self._factor, torque_ff / self._factor)
+    
+    @Node.send_func_decorator(CMD_SET_INPUT_VEL, '<f4,<f4')
+    def set_vel(self, vel, torque_ff=0):
+        return (vel * self._factor, torque_ff / self._factor)
+
+    @Node.send_func_decorator(CMD_SET_INPUT_TORQUE, '<f4')
     def set_torque(self, torque):
-        return (torque * self._factor)
+        return (torque / self._factor, )

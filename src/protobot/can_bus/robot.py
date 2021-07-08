@@ -1,60 +1,51 @@
-from protobot.can_bus.protocols.can_manager import CanManager
-from protobot.can_bus.motor import Motor
-from protobot.can_bus.battery import Battery
-from protobot.can_bus.accessory import Accessory
-from time import sleep, time
+from .network import Network
+from .nodes import NodeFactory
+import time
 
-__metaclass__ = type
+class Robot(object):
+    def __init__(self, channel = 'can0', bitrate = 250000, bustype = 'socketcan'):
+        self.network = Network()
+        self.network.connect(channel = channel, bitrate = bitrate, bustype = bustype)
+        self.devices = {}
+        self.node_id = {}
+        self._init_time = time.time()
 
-
-class Robot():
-    def __init__(self, bus='can0', bitrate=250000):
-        self._can_manager = CanManager(channel=bus, bitrate=bitrate)
-        self._motors = {}
-        self._battery = None
-        self._devices = {}
-        self._start_time = time()
-
-    def set_battery(self, can_id=0x20):
-        self._battery = Battery(self._can_manager, can_id)
-        return self._battery
-
-    def battery(self):
-        return self._battery
-
-    def add_device(self, name, can_id=0x02, cls=Accessory, *args, **kwargs):
-        self._devices[name] = cls(self._can_manager, can_id, *args, **kwargs)
-        return self._devices[name]
-
-    def add_motor(self, name, can_id=0x10, reduction=1):
-        self._motors[name] = Motor(self._can_manager, can_id, reduction)
-        return self._motors[name]
-
-    def motor(self, name):
-        return self._motors.get(name, None)
+    def add_device(self, name, factory, node_id, *args, **kwargs):
+        if not isinstance(factory, NodeFactory):
+            raise RuntimeError('unknown factory to init device')
+        self.node_id[name] = node_id
+        self.devices[name] = factory.get_node(network = self.network, node_id = node_id, *args, **kwargs)
+        return self.devices[name]
 
     def device(self, name):
-        return self._devices.get(name, None)
-
-    def status(self):
-        status = {'motors': []}
-        print('Motors:')
-        for key in self._motors:
-            print('{}: '.format(key))
-            stat = self._motors[key].status()
-            status['motors'].append({key: stat})
-        return status
-
+        return self.devices.get(name, None)
+    
+    def device_id(self, name):
+        return self.node_id.get(name, None)
+    
+    def remove_device(self, name):
+        try:
+            del self.network[self.node_id[name]]
+        except:
+            print(self.node_id[name])
+            pass
+    
     def delay(self, seconds):
-        sleep(seconds)
-
+        time.sleep(seconds)
+    
     def time(self):
-        return time() - self._start_time
-
+        return time.time() - self._init_time
+    
     def enable(self):
-        for key in self._motors:
-            self._motors[key].enable()
-
+        for key in self.devices:
+            try:
+                self.devices[key].enable()
+            except:
+                pass
+    
     def disable(self):
-        for key in self._motors:
-            self._motors[key].disable()
+        for key in self.devices:
+            try:
+                self.devices[key].disable()
+            except:
+                pass
