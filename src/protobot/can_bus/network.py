@@ -133,7 +133,7 @@ class NodeScanner(object):
         self.nodes = {}
     
     def on_message_received(self, can_id, data):
-        node_id = can_id & 0x7E0
+        node_id = (can_id & 0x7E0)>>5
         command = can_id & 0x1F
         if node_id not in self.nodes and node_id != 0 and command == 0x01:
             mver, sver, dID = struct.unpack('<HHI', data)
