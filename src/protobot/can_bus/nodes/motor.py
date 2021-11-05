@@ -29,6 +29,8 @@ class Motor(Node):
     CMD_SET_INPUT_POS = 0x11
     CMD_SET_INPUT_VEL = 0x12
     CMD_SET_INPUT_TORQUE = 0x13
+    CMD_ERASE_ODRIVE = 0x14
+    CMD_UNLOCK = 0x15
 
     def __init__(self, node_id, reduction):
         super(Motor, self).__init__(node_id)
@@ -212,3 +214,11 @@ class Motor(Node):
     @Node.send_func_decorator(CMD_SET_INPUT_TORQUE, '<f4')
     def set_torque(self, torque):
         return (torque / self._factor, )
+
+    @Node.send_func_decorator(CMD_ERASE_ODRIVE)
+    def reset_motor(self):
+        pass
+
+    @Node.send_func_decorator(CMD_UNLOCK)
+    def unlock(self):
+        pass
