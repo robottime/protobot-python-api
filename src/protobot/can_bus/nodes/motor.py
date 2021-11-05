@@ -29,6 +29,8 @@ class Motor(Node):
     CMD_SET_INPUT_POS = 0x11
     CMD_SET_INPUT_VEL = 0x12
     CMD_SET_INPUT_TORQUE = 0x13
+    CMD_ERASE_ODRIVE = 0x14
+    CMD_UNLOCK = 0x15
 
     def __init__(self, node_id, reduction):
         super(Motor, self).__init__(node_id)
@@ -137,7 +139,7 @@ class Motor(Node):
     @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B,<f4,<f2')
     def get_ramp_mode_ramp(self, control_mode, input_mode, ramp,_):
         assert input_mode == 2
-        return ramp / self._factor
+        return ramp / fabs(self._factor)
     
     @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B,<f4,<f2')
     def get_filter_mode_bandwidth(self, control_mode, input_mode, bandwidth,_):
@@ -147,7 +149,7 @@ class Motor(Node):
     @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B,<f2,<f2,<f2')
     def get_traj_mode_params(self, control_mode, input_mode, max_vel, max_acc, max_dec):
         assert input_mode == 5
-        return (max_vel / self._factor, max_acc / self._factor, max_dec / self._factor)
+        return (fabs(max_vel / self._factor), fabs(max_acc / self._factor), fabs(max_dec / self._factor))
     
     @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B')
     def position_mode(self):
@@ -167,11 +169,11 @@ class Motor(Node):
     
     @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B,<f2,<f2,<f2')
     def position_traj_mode(self, max_vel, max_acc, max_dec):
-        return (3, 5, max_vel * self._factor, max_acc * self._factor, max_dec * self._factor)
+        return (3, 5, fabs(max_vel * self._factor), fabs(max_acc * self._factor), fabs(max_dec * self._factor))
     
     @Node.send_func_decorator(CMD_SET_CONTROLLER_MODES, '<B,<B,<f4')
     def velocity_ramp_mode(self, ramp):
-        return (2, 2, ramp * self._factor)
+        return (2, 2, ramp * fabs(self._factor))
     
     @Node.get_func_decorator(CMD_GET_CONTROLLER_PID, '<f4,<f2,<f2')
     def get_controller_pid(self, pp, vp, vi):
@@ -187,7 +189,7 @@ class Motor(Node):
     
     @Node.get_func_decorator(CMD_GET_LIMITS, '<f4,<f4')
     def get_vel_limit(self, vel_limit, current_limit):
-        return vel_limit / self._factor
+        return vel_limit / fabs(self._factor)
     
     @Node.get_func_decorator(CMD_GET_LIMITS, '<f4,<f4')
     def get_current_limit(self, vel_limit, current_limit):
@@ -199,7 +201,7 @@ class Motor(Node):
 
     @Node.send_func_decorator(CMD_SET_LIMITS, '<f4,<f4')
     def set_vel_limit(self, vel_limit):
-        return (vel_limit * self._factor, 0)
+        return (vel_limit * fabs(self._factor), 0)
 
     @Node.send_func_decorator(CMD_SET_INPUT_POS, '<f4,<f2,<f2')
     def set_pos(self, pos, vel_ff = 0, torque_ff = 0):
@@ -212,3 +214,11 @@ class Motor(Node):
     @Node.send_func_decorator(CMD_SET_INPUT_TORQUE, '<f4')
     def set_torque(self, torque):
         return (torque / self._factor, )
+
+    @Node.send_func_decorator(CMD_ERASE_ODRIVE)
+    def reset_motor(self):
+        pass
+
+    @Node.send_func_decorator(CMD_UNLOCK)
+    def unlock(self):
+        pass
