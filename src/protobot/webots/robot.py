@@ -1,33 +1,22 @@
-from protobot.webots.motor import Motor
 from controller import Robot as WbRobot
+from .node import NodeFactory
 
-__metaclass__ = type
-
-
-class Robot():
+class Robot(object):
     def __init__(self):
         self._robot = WbRobot()
-        self._motors = {}
+        self.devices = {}
 
-    def add_motor(self, name, reduction=1):
-        self._motors[name] = Motor(self._robot.getMotor(name), reduction)
-        return self._motors[name]
+    def add_device(self, name, factory, *args, **kwargs):
+        if not isinstance(factory, NodeFactory):
+            raise RuntimeError('unknown factory to init device')
+        self.devices[name] = factory.get_node(robot=self._robot, device_name=name, *args, **kwargs)
+        return self.devices[name]
 
-    def status(self):
-        status = {'motors': []}
-        if len(self._motors) > 0:
-            print('Motors:')
-        for key in self._motors:
-            stat = self._motors[key].status()
-            status['motors'].append({key: stat})
-            print_str = 'Disabled'
-            if stat['enable']:
-                print_str = 'In ' + stat['mode'] + ' mode'
-            print('  {}: {}'.format(key, print_str))
-        return status
-
-    def motor(self, name):
-        return self._motors.get(name, None)
+    def device(self, name):
+        return self.devices.get(name, None)
+    
+    def remove_device(self, name):
+        self.devices.pop(name, None)
 
     def delay(self, seconds):
         self._robot.step(int(seconds * 1000))
@@ -36,9 +25,19 @@ class Robot():
         return self._robot.getTime()
 
     def enable(self):
-        for key in self._motors:
-            self._motors[key].enable()
+        # for key in self._motors:
+        #     self._motors[key].enable()
+        for key in self.devices:
+            try:
+                self.devices[key].enable()
+            except:
+                pass
 
     def disable(self):
-        for key in self._motors:
-            self._motors[key].disable()
+        # for key in self._motors:
+        #     self._motors[key].disable()
+        for key in self.devices:
+            try:
+                self.devices[key].disable()
+            except:
+                pass
