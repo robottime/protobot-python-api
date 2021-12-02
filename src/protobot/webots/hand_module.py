@@ -1,12 +1,12 @@
 from math import pi, fabs
 from .node import NodeFactory
 
-class HandFactory(NodeFactory):
+class HandModuleFactory(NodeFactory):
     def get_node(self, robot, device_name):
-        motor = Hand(robot.getDevice(device_name+"::left"))
+        motor = HandModule(robot.getDevice(device_name+"::left"))
         return motor
 
-class Hand():
+class HandModule():
     def __init__(self, webots_motor):
         self._motor = webots_motor
         self._motor.setPosition(0)
