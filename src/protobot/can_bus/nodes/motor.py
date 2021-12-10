@@ -130,7 +130,14 @@ class Motor(Node):
     
     @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
     def get_torque(self, pos, vel, torque):
-        return torque * self._factor
+        return torque * self.reduction
+
+    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
+    def get_phase_current(self, pos, vel, torque):
+        k = 240
+        if self.reduction < 50 or self.reduction > -50:
+            k = 470
+        return torque / 8.27 * k
 
     @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B')
     def get_controller_modes(self, control_mode, input_mode):
