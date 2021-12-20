@@ -97,7 +97,7 @@ class Motor(Node):
         bitrate_id = 2
         if bitrate == 250000:
             bitrate_id = 0
-        elif bitrate_id == 500000:
+        elif bitrate == 500000:
             bitrate_id = 1
         return (id, bitrate_id, rate)
 
