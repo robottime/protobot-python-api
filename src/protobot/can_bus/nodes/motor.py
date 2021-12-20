@@ -92,9 +92,14 @@ class Motor(Node):
     def save_configuration(self):
         pass
 
-    @Node.send_func_decorator(CMD_SET_AXIS_NODE_ID, '<u4,<u4')
-    def set_can_id(self, id = 0x10, rate = 1000):
-        return (id, rate)
+    @Node.send_func_decorator(CMD_SET_AXIS_NODE_ID, '<u2,<u2,<u4')
+    def set_can_id(self, id = 0x10, bitrate = 1000000, rate = 1000):
+        bitrate_id = 2
+        if bitrate == 250000:
+            bitrate_id = 0
+        elif bitrate_id == 500000:
+            bitrate_id = 1
+        return (id, bitrate_id, rate)
 
     @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<u4')
     def enable(self):
@@ -132,12 +137,12 @@ class Motor(Node):
     def get_torque(self, pos, vel, torque):
         return torque * self.reduction
 
-    @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
-    def get_phase_current(self, pos, vel, torque):
-        k = 240
-        if self.reduction < 50 or self.reduction > -50:
-            k = 470
-        return torque / 8.27 * k
+    # @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
+    # def get_phase_current(self, pos, vel, torque):
+    #     k = 240
+    #     if self.reduction < 50 and self.reduction > -50:
+    #         k = 470
+    #     return torque / 8.27 * k
 
     @Node.get_func_decorator(CMD_GET_CONTROLLER_MODES, '<B,<B')
     def get_controller_modes(self, control_mode, input_mode):

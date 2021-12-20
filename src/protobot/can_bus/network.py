@@ -47,7 +47,7 @@ class Network(MutableMapping):
         if 'channel' not in kwargs:
             kwargs['channel'] = 'can0'
         if 'bitrate' not in kwargs:
-            kwargs['bitrate'] = 250000
+            kwargs['bitrate'] = 1000000
         self.bus = can.interface.Bus(*args, **kwargs)
         logger.info('Connected to "%s"', self.bus.channel_info)
         self.notifier = can.Notifier(self.bus, self.listeners, 1)
