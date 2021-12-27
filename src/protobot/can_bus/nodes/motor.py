@@ -93,7 +93,7 @@ class Motor(Node):
         pass
 
     @Node.send_func_decorator(CMD_SET_AXIS_NODE_ID, '<u2,<u2,<u4')
-    def set_can_id(self, id = 0x10, bitrate = 1000000, rate = 1000):
+    def set_can_id(self, id = 0x10, rate = 1000, bitrate = 1000000):
         bitrate_id = 2
         if bitrate == 250000:
             bitrate_id = 0
