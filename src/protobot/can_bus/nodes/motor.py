@@ -123,7 +123,7 @@ class Motor(Node):
 
     @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
     def get_status(self, pos, vel, torque):
-        return (pos / self._factor, vel / self._factor, torque * self._factor)
+        return (pos / self._factor, vel / self._factor, torque * self.reduction)
     
     @Node.get_func_decorator(CMD_GET_MOTOR_STATUS, '<f4,<f2,<f2')
     def get_pos(self, pos, vel, torque):
