@@ -30,6 +30,14 @@ robot = Robot()
 motor = robot.add_device('motor0', MotorFactory(), 0x15, reduction=12.45)
 ```
 
+使用pcan驱动时的初始化方法
+``` python
+from protobot.can_bus import Robot
+from protobot.can_bus.nodes import MotorFactory
+robot = Robot(bustype='pcan', channel='PCAN_USBBUS1', bitrate=1000000)
+motor = robot.add_device('motor0', MotorFactory(), 0x15, reduction=12.45)
+```
+
 ### 电机状态
 `motor.status()`
 最近一次心跳包的内容
