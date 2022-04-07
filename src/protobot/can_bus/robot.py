@@ -1,10 +1,18 @@
-from .network import Network
+import sys
+from .network import Network as LinuxNetwork
+from .windows_network import Network as WindowNetwork
 from .nodes import NodeFactory
 import time
 
 class Robot(object):
-    def __init__(self, channel = 'can0', bitrate = 250000, bustype = 'socketcan'):
-        self.network = Network()
+    def __init__(self, channel = 'can0', bitrate = 1000000, bustype = 'socketcan'):
+        self.network = None
+        if sys.platform == 'win32':
+            self.network = WindowNetwork()
+        elif sys.platform.startswith('linux'):
+            self.network = LinuxNetwork
+        else:
+            raise OSError('Your system is not supported.')
         self.network.connect(channel = channel, bitrate = bitrate, bustype = bustype)
         self.devices = {}
         self.node_id = {}

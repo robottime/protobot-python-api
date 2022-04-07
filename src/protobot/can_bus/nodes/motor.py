@@ -54,13 +54,13 @@ class Motor(Node):
     def heartbeat_callback(self, can_id, data, timestamp):
         state,err,merr,eerr,cerr,cmode,imode,mtype = list(np.frombuffer(data, dtype='<B'))
         self._status.update({
-            'state': state,
-            'error': err,
-            'motor_err': merr,
-            'encoder_err': eerr,
-            'controller_err': cerr,
-            'control_mode': cmode,
-            'input_mode': imode,
+            'state': int(state),
+            'error': int(err),
+            'motor_err': int(merr),
+            'encoder_err': int(eerr),
+            'controller_err': int(cerr),
+            'control_mode': int(cmode),
+            'input_mode': int(imode),
             'timestamp': timestamp
         })
 
@@ -225,7 +225,7 @@ class Motor(Node):
 
     @Node.send_func_decorator(CMD_SET_INPUT_TORQUE, '<f4')
     def set_torque(self, torque):
-        return (torque / self._factor, )
+        return (torque / self.reduction, )
 
     @Node.send_func_decorator(CMD_ERASE_ODRIVE)
     def reset_motor(self):

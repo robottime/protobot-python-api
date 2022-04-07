@@ -44,7 +44,7 @@ class Node(object):
                 on_get_data.timestamp = None
 
                 node.network.subscribe(node.can_id(command), on_get_data)
-                node.network.send_message(node.can_id(command), None, True)
+                node.network.send_message(node.can_id(command), b'', True)
 
                 t_start = time()
                 while timeout == 0 or time() - t_start < timeout:
@@ -91,7 +91,7 @@ class Node(object):
                     node.network.unsubscribe(node.can_id(command), on_sync_data)
 
                 node.network.subscribe(node.can_id(command), on_sync_data)
-                node.network.send_message(node.can_id(command), None, True)
+                node.network.send_message(node.can_id(command), b'', True)
 
                 return func(node, on_sync_data)
             return inner_wrapper
@@ -105,7 +105,7 @@ class Node(object):
                 if node.network is None:
                     raise RuntimeError('A network is required to send data')
                 if format is None:
-                    node.network.send_message(node.can_id(command), None, remote)
+                    node.network.send_message(node.can_id(command), b'', remote)
                 else:
                     try:
                         data = func(node, *args, **kwargs)
