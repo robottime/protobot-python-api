@@ -4,7 +4,7 @@ import numpy as np
 from time import time
 
 class MotorFactory(NodeFactory):
-    def get_node(self, network, node_id = 0x10, reduction = 12.45):
+    def get_node(self, network, node_id = 0x10, reduction = -12.45):
         motor = Motor(node_id, reduction)
         network[node_id] = motor
         return motor

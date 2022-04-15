@@ -14,7 +14,7 @@ class Robot(object):
             if sys.platform == 'win32':
                 self.network = WindowNetwork()
             elif sys.platform.startswith('linux'):
-                self.network = LinuxNetwork
+                self.network = LinuxNetwork()
             else:
                 raise OSError('Your system is not supported.')
         self.network.connect(channel = channel, bitrate = bitrate, bustype = bustype, **kwargs)
