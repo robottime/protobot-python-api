@@ -5,18 +5,16 @@ except ImportError:
 import logging
 import threading
 
-try:
-    import candle_driver as can
-except ImportError:
-    can = None
+import socket
+import time
 
 logger = logging.getLogger(__name__)
 
 class Network(MutableMapping):
     def __init__(self):
-        self.device = can.list_devices()[0]
-        self.channel = self.device.channel(0)
-        self.notifier = None
+        self.socket = socket.socket()
+        self.host = '192.168.31.174'
+        self.port = 9109
         self.nodes = {}
         self.subscribers = {}
         self.send_lock = threading.Lock()
@@ -24,8 +22,8 @@ class Network(MutableMapping):
         self.read_lock = threading.Lock()
         self.read_thread = threading.Thread(
             target=self._rx_thread,
-            args=(self.channel,),
-            name=f'can.notifier',
+            args=(self.socket,),
+            name=f'sock.notifier',
         )
         self.read_thread.daemon = True
     
@@ -44,23 +42,18 @@ class Network(MutableMapping):
             self.subscribers[can_id].remove(callback)
     
     def connect(self, *args, **kwargs):
-        bitrate = 1000000
-        if 'bitrate' in kwargs:
-            bitrate = kwargs['bitrate']
-        if not self.device.open():
-            raise IOError("Failed to open can bus. Maybe can bus is in use.")
-        self.channel.set_bitrate(bitrate)
-        if not self.channel.start():
-            raise IOError("Failed to open can bus. Maybe can bus is in use.")
+        if 'host' in kwargs:
+            self.host = kwargs['host']
+        if 'port' in kwargs:
+            self.port = kwargs['port']
+        self.socket.connect((self.host, self.port))
         self.read_thread.start()
-        logger.info('Connected to "%s"', self.device.name())
         return self
         
     def disconnect(self):
         self._running = False
         self.read_thread.join(5)
-        self.channel.stop()
-        self.device.close()
+        self.socket.close()
     
     def __enter__(self):
         return self
@@ -78,10 +71,10 @@ class Network(MutableMapping):
     def send_message(self, can_id, data, remote=False):
         
         with self.send_lock:
-            rtr = 0
-            if remote:
-                rtr = can.CANDLE_ID_RTR
-            self.channel.write(can_id | rtr, data)
+            rtr = 1 if remote else 0
+            req = bytes([0x71, can_id >> 5, can_id & 0x1F, rtr << 4 | len(data)])
+            req += data
+            self.socket.send(req)
     
     def notify(self, can_id, data, timestamp):
         if can_id in self.subscribers:
@@ -107,7 +100,7 @@ class Network(MutableMapping):
     def __len__(self):
         return len(self.nodes)
 
-    def _rx_thread(self, channel) -> None:
+    def _rx_thread(self, sock) -> None:
         new = False
         can_id = 0
         can_data = b''
@@ -117,18 +110,19 @@ class Network(MutableMapping):
                 if new:
                     with self.read_lock:
                         self.notify(can_id, can_data, ts)
-                try:
-                    _frame_type, _can_id, _can_data, _, _ts = channel.read(1000)
-                    if _frame_type == can.CANDLE_FRAMETYPE_RECEIVE:
-                        can_id = _can_id
-                        can_data = _can_data
-                        ts = _ts
-                        new = True
-                    else:
-                        new = False
-                except:
+                res_bit = sock.recv(1)
+                if ord(res_bit) == 0x73:
+                    header = list(sock.recv(3))
+                    node_id = header[0]
+                    cmd_id = header[1]
+                    flag = header[2]
+                    len = flag & 0x0f
+                    can_id = node_id << 5 | cmd_id
+                    can_data = sock.recv(len)
+                    ts = time.time()
+                    new = True
+                else:
                     new = False
 
-        except Exception as exc:  # pylint: disable=broad-except
+        except Exception as exc:
             logger.info("suppressed exception: %s", exc)
-   

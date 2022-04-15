@@ -67,6 +67,9 @@ class Network(MutableMapping):
     def __exit__(self, type, value, traceback):
         self.disconnect()
     
+    def __del__(self):
+        self.disconnect()
+        
     def add_node(self, node):
         self[node.id] = node
         return node
