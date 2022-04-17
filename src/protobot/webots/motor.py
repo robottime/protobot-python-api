@@ -37,6 +37,12 @@ class Motor():
         self._motor.setAcceleration(-1)
         self._mode = Motor.POSITION_MODE
 
+    def position_filter_mode(self, bandwidth = 10):
+        self._vel = self._max_vel
+        self._motor.setVelocity(0)
+        self._motor.setAcceleration(-1)
+        self._mode = Motor.POSITION_MODE
+
     def position_traj_mode(self, max_vel, max_acc):
         self._vel = min(fabs(max_vel), self._max_vel)
         self._motor.setVelocity(0)

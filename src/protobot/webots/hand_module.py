@@ -10,5 +10,9 @@ class HandModule():
     def __init__(self, webots_motor):
         self._motor = webots_motor
         self._motor.setPosition(0)
+    
+    def enable(self):
+        pass
+    
     def set_pos(self, pos):
         self._motor.setPosition(pos*0.02)

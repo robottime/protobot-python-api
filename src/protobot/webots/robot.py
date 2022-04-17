@@ -4,6 +4,7 @@ from .node import NodeFactory
 class Robot(object):
     def __init__(self):
         self._robot = WbRobot()
+        self._timestep = int(self._robot.getBasicTimeStep())
         self.devices = {}
 
     def add_device(self, name, factory, *args, **kwargs):
@@ -18,8 +19,14 @@ class Robot(object):
     def remove_device(self, name):
         self.devices.pop(name, None)
 
+    def getBasicTimeStep(self):
+        return self._timestep
+
+    def step(self):
+        return self._robot.step(self._timestep)
+
     def delay(self, seconds):
-        self._robot.step(int(seconds * 1000))
+        return self._robot.step(int(seconds * 1000))
 
     def time(self):
         return self._robot.getTime()
