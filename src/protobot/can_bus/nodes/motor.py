@@ -112,6 +112,10 @@ class Motor(Node):
     @Node.send_func_decorator(CMD_SET_AXIS_REQUESTED_STATE, '<u4')
     def calibrate(self):
         return (3, )
+
+    @Node.get_func_decorator(CMD_GET_HARDWARE_STATUS, '<f4,<f4')
+    def get_hardware_info(self, vbus, temperature):
+        return (vbus, temperature)
     
     @Node.get_func_decorator(CMD_GET_HARDWARE_STATUS, '<f4,<f4')
     def get_vbus(self, vbus, temperature):

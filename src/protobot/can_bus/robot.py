@@ -21,6 +21,9 @@ class Robot(object):
         self.devices = {}
         self.node_id = {}
         self._init_time = time.time()
+    
+    def __del__(self):
+        self.network.disconnect()
 
     def add_device(self, name, factory, node_id, *args, **kwargs):
         if not isinstance(factory, NodeFactory):
